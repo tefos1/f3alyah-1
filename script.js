@@ -10,7 +10,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const analytics = firebase.analytics();
-const db = firebase.firestore();
+const db = firebase.database();
 
 // Game State
 let currentLevelIndex = 0;
@@ -924,7 +924,8 @@ function restartGame() {
 // --- Leaderboard Implementation ---
 async function saveScoreToLeaderboard(name, timeInSeconds) {
     try {
-        await db.collection("leaderboard").add({
+        const newRef = db.ref('leaderboard').push();
+        await newRef.set({
             name: name,
             timeSeconds: timeInSeconds,
             timestamp: Date.now()
@@ -954,10 +955,12 @@ async function showLeaderboard(fromEndScreen = false) {
     let leaderboard = [];
     
     try {
-        const querySnapshot = await db.collection("leaderboard").orderBy("timeSeconds").limit(20).get();
-        querySnapshot.forEach((doc) => {
-            leaderboard.push({ id: doc.id, ...doc.data() });
-        });
+        const snapshot = await db.ref('leaderboard').orderByChild('timeSeconds').limitToFirst(20).once('value');
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                leaderboard.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+        }
     } catch (e) {
         console.error("Firebase Error: ", e);
         // Fallback to local
