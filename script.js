@@ -184,73 +184,59 @@ function loadLevel(index) {
 // GAME MECHANIC RENDERERS
 // ==========================================
 
-// --- Utility for Generic Drag & Drop (Mobile & Desktop via Touch Punch or custom logic) ---
-// For pure vanilla without heavy libraries, HTML5 drag and drop is used for desktop. 
-// Note: Real mobile touch drag/drop requires custom touch handlers. We'll stick to HTML5 for now.
+// --- Interaction Handlers (Now Click-Based instead of Drag-Drop) ---
 let draggedItem = null;
 
 function setupDragEvents(element) {
-    element.draggable = true;
-    element.addEventListener('dragstart', function(e) {
-        draggedItem = this;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', this.innerHTML);
-        setTimeout(() => this.style.opacity = '0.5', 0);
-    });
-    element.addEventListener('dragend', function() {
-        this.style.opacity = '1';
-        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    });
+    // Replaced with Click logic inside render functions directly!
 }
-
 function setupDropZone(element, dropCallback) {
-    element.addEventListener('dragover', e => {
-        e.preventDefault();
-        return false;
-    });
-    element.addEventListener('dragenter', function() {
-        this.classList.add('drag-over');
-    });
-    element.addEventListener('dragleave', function() {
-        this.classList.remove('drag-over');
-    });
-    element.addEventListener('drop', function(e) {
-        e.stopPropagation();
-        this.classList.remove('drag-over');
-        if (draggedItem && dropCallback) {
-            dropCallback(draggedItem, this);
-        }
-        return false;
-    });
+    // Replaced with Click logic inside render functions directly!
 }
 
-// 1. SEQUENCE (Sortable List)
+// 1. SEQUENCE (Sortable List via Click-to-Swap)
 function renderSequence(level) {
     const listContainer = document.createElement('div');
     listContainer.className = 'val-sequence-list';
     
     const shuffledItems = [...level.items].sort(() => Math.random() - 0.5);
+    let selectedSequenceItem = null;
     
     shuffledItems.forEach(item => {
         const row = document.createElement('div');
-        row.className = 'val-sequence-item';
-        row.innerHTML = `<i class="fas fa-grip-lines"></i> ${item.text}`;
+        row.className = 'val-sequence-item val-pointer';
+        row.innerHTML = `<i class="fas fa-hand-pointer"></i> ${item.text}`;
         row.dataset.order = item.order;
-        setupDragEvents(row);
         
-        setupDropZone(row, (dragged, target) => {
-            if (dragged !== target) {
-                // Swap HTML and dataset
-                const tempHtml = dragged.innerHTML;
-                const tempOrder = dragged.dataset.order;
-                
-                dragged.innerHTML = target.innerHTML;
-                dragged.dataset.order = target.dataset.order;
-                
-                target.innerHTML = tempHtml;
-                target.dataset.order = tempOrder;
+        row.onclick = () => {
+            if (!selectedSequenceItem) {
+                // Select first item
+                selectedSequenceItem = row;
+                row.style.border = '2px dashed var(--primary)';
+                row.style.background = 'rgba(67, 97, 238, 0.1)';
+            } else {
+                if (selectedSequenceItem === row) {
+                    // Deselect
+                    row.style.border = '1px solid #ddd';
+                    row.style.background = 'white';
+                    selectedSequenceItem = null;
+                } else {
+                    // Swap
+                    const tempHtml = selectedSequenceItem.innerHTML;
+                    const tempOrder = selectedSequenceItem.dataset.order;
+                    
+                    selectedSequenceItem.innerHTML = row.innerHTML;
+                    selectedSequenceItem.dataset.order = row.dataset.order;
+                    selectedSequenceItem.style.border = '1px solid #ddd';
+                    selectedSequenceItem.style.background = 'white';
+                    
+                    row.innerHTML = tempHtml;
+                    row.dataset.order = tempOrder;
+                    
+                    selectedSequenceItem = null;
+                }
             }
-        });
+        };
         listContainer.appendChild(row);
     });
     
@@ -289,37 +275,58 @@ function renderMatching(level) {
     const defs = [...level.pairs].sort(() => Math.random() - 0.5);
     
     let matchedCount = 0;
+    let selectedTerm = null;
     
     terms.forEach(pair => {
         const t = document.createElement('div');
-        t.className = 'val-match-term';
+        t.className = 'val-match-term val-pointer';
         t.textContent = pair.term;
         t.dataset.id = pair.id;
-        setupDragEvents(t);
+        t.onclick = () => {
+            if (t.style.visibility === 'hidden') return;
+            // Deselect all others
+            termsCol.querySelectorAll('.val-match-term').forEach(el => {
+                el.style.transform = 'scale(1)';
+                el.style.boxShadow = '';
+            });
+            // Select this
+            selectedTerm = t;
+            t.style.transform = 'scale(1.05)';
+            t.style.boxShadow = '0 0 10px var(--warning)';
+            showFeedback("success", "تم التحديد! الآن اضغط على المربع المناسب في الجهة الأخرى للتوصيل.");
+        };
         termsCol.appendChild(t);
     });
     
     defs.forEach(pair => {
         const d = document.createElement('div');
-        d.className = 'val-match-def';
-        d.innerHTML = `<span>${pair.definition}</span><div class="val-drop-slot">اسحب هنا</div>`;
+        d.className = 'val-match-def val-pointer';
+        d.innerHTML = `<span>${pair.definition}</span><div class="val-drop-slot">اضغط هنا لوضع الكلمة</div>`;
         d.dataset.id = pair.id;
         
         const slot = d.querySelector('.val-drop-slot');
-        setupDropZone(slot, (dragged, target) => {
-            // Check if correct
-            if (dragged.dataset.id === d.dataset.id) {
-                target.classList.add('matched');
-                target.textContent = dragged.textContent;
-                dragged.style.visibility = 'hidden';
-                matchedCount++;
-                if (matchedCount === level.pairs.length) {
-                    showGameComplete(null, "رائع! إدراك ممتاز للمفاهيم الأساسية.");
-                }
-            } else {
-                showFeedback("error", "خطأ! حاول مطابقة المفهوم بتعريفه الدقيق.");
-            }
-        });
+        d.onclick = () => {
+             if (!selectedTerm) {
+                 showFeedback("error", "اختر المصطلح أولاً بالضغط عليه.");
+                 return;
+             }
+             if (selectedTerm.dataset.id === d.dataset.id) {
+                 slot.classList.add('matched');
+                 slot.textContent = selectedTerm.textContent;
+                 selectedTerm.style.visibility = 'hidden';
+                 selectedTerm = null;
+                 matchedCount++;
+                 ui.feedbackMessage.classList.add('hidden');
+                 if (matchedCount === level.pairs.length) {
+                     showGameComplete(null, "رائع! إدراك ممتاز للمفاهيم الأساسية.");
+                 }
+             } else {
+                 showFeedback("error", "خطأ! حاول مطابقة المفهوم بتعريفه الدقيق.");
+                 selectedTerm.style.transform = 'scale(1)';
+                 selectedTerm.style.boxShadow = '';
+                 selectedTerm = null;
+             }
+        };
         defsCol.appendChild(d);
     });
     
@@ -461,36 +468,67 @@ function renderCategorize(level) {
     bucketsContainer.className = 'val-buckets-wrap';
     
     let sortedCount = 0;
+    let selectedCard = null;
     
     level.categories.forEach(cat => {
         const bucket = document.createElement('div');
-        bucket.className = 'val-bucket';
+        bucket.className = 'val-bucket val-pointer';
         bucket.style.borderColor = cat.color;
-        bucket.innerHTML = `<h3 style="color:${cat.color}">${cat.name}</h3><div class="val-bucket-dropArea"></div>`;
+        bucket.innerHTML = `<h3 style="color:${cat.color}">${cat.name}</h3><div class="val-bucket-dropArea">اضغط لوضع العنصر</div>`;
         
-        setupDropZone(bucket.querySelector('.val-bucket-dropArea'), (dragged, target) => {
-            if (dragged.dataset.catId === cat.id) {
-                target.appendChild(dragged);
-                dragged.draggable = false;
-                dragged.style.cursor = 'default';
-                sortedCount++;
-                if (sortedCount === level.items.length) {
-                    showGameComplete(null, "تصنيف رائع ومبني على أسس واضحة!");
-                }
-            } else {
-                showFeedback("error", "هذا النشاط لا ينتمي لهذا التصنيف.");
-            }
-        });
+        bucket.onclick = () => {
+             if (!selectedCard) {
+                 showFeedback("error", "اختر النشاط أولاً بالضغط عليه من القائمة بالأعلى.");
+                 return;
+             }
+             if (selectedCard.dataset.catId === cat.id) {
+                 let dropArea = bucket.querySelector('.val-bucket-dropArea');
+                 if(dropArea.textContent === "اضغط لوضع العنصر") {
+                     dropArea.textContent = "";
+                 }
+                 dropArea.appendChild(selectedCard);
+                 selectedCard.onclick = null; // Lock item
+                 selectedCard.style.cursor = 'default';
+                 selectedCard.style.boxShadow = '';
+                 selectedCard.style.transform = 'scale(1)';
+                 selectedCard.classList.remove('selected');
+                 selectedCard = null;
+                 sortedCount++;
+                 ui.feedbackMessage.classList.add('hidden');
+                 if (sortedCount === level.items.length) {
+                     showGameComplete(null, "تصنيف رائع ومبني على أسس واضحة!");
+                 }
+             } else {
+                 showFeedback("error", "هذا النشاط لا ينتمي لهذا التصنيف.");
+                 selectedCard.style.boxShadow = '';
+                 selectedCard.style.transform = 'scale(1)';
+                 selectedCard.classList.remove('selected');
+                 selectedCard = null;
+             }
+        };
         bucketsContainer.appendChild(bucket);
     });
     
     const items = [...level.items].sort(() => Math.random() - 0.5);
     items.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'val-draggable-card';
+        div.className = 'val-draggable-card val-pointer';
         div.textContent = item.text;
-        div.dataset.catId = item.category === "cat1" ? "cat1" : "cat2"; // using ids
-        setupDragEvents(div);
+        div.dataset.catId = item.category === "cat1" ? "cat1" : "cat2";
+        
+        div.onclick = () => {
+            // Deselect others
+             itemsPool.querySelectorAll('.val-draggable-card').forEach(el => {
+                 el.style.boxShadow = '';
+                 el.style.transform = 'scale(1)';
+                 el.classList.remove('selected');
+             });
+             selectedCard = div;
+             div.style.boxShadow = '0 0 10px var(--warning)';
+             div.style.transform = 'scale(1.05)';
+             div.classList.add('selected');
+             showFeedback("success", "ممتاز. الآن اضغط على التصنيف المناسب بالأسفل.");
+        };
         itemsPool.appendChild(div);
     });
     

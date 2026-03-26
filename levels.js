@@ -3,7 +3,7 @@ const gameLevels = [
     {
         id: 1,
         title: "خطوات التخطيط",
-        description: "رتب الخطوات التالية لبناء مبادرة طلابية ناجحة بالسحب والإفلات:",
+        description: "رتب الخطوات التالية لبناء مبادرة طلابية ناجحة بالضغط على خطوتين لتبديل أماكنهما:",
         icon: "fa-list-ol",
         type: "sequence",
         items: [
@@ -17,7 +17,7 @@ const gameLevels = [
     {
         id: 2,
         title: "مطابقة المفاهيم",
-        description: "اسحب كل مصطلح في اليمين إلى تعريفه الصحيح في اليسار:",
+        description: "اضغط على كل مصطلح في اليمين، ثم اضغط على تعريفه في اليسار للتوصيل:",
         icon: "fa-puzzle-piece",
         type: "matching",
         pairs: [
@@ -60,7 +60,7 @@ const gameLevels = [
     {
         id: 6,
         title: "تصنيف الأنشطة",
-        description: "اسحب كل نشاط إلى الصندوق المناسب له (تعليم منهجي أم تربية غير منهجية):",
+        description: "اضغط على كل نشاط، ثم اضغط على الصندوق المناسب لتصنيفه:",
         icon: "fa-boxes",
         type: "categorize",
         categories: [
@@ -107,7 +107,7 @@ const gameLevels = [
     {
         id: 9,
         title: "مهارات حل المشكلات",
-        description: "اسحب كل خطوة للتعامل مع مشكلة طارئة (مثل إلغاء حجز القاعة) للوصف الصحيح:",
+        description: "اضغط على الخطوة المناسبة، ثم اضغط على الوصف الصحيح (لترتيب التعامل مع مشكلة طارئة):",
         icon: "fa-exclamation-triangle",
         type: "matching",
         pairs: [
